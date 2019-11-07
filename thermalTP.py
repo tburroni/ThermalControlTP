@@ -4,8 +4,8 @@ Astronautical Engineering, National University of San Martín
 Professor: CASTELLO, Nahuel.
 Students: BURRONI, Tomás Ignacio; ESCOBAR, Matías Ignacio.
 
-2019/06/26
-Version 2.0
+2019/11/04
+Version 2.2
 Editor: Tom
 '''
 
@@ -36,7 +36,7 @@ orbit = 2*np.pi * np.sqrt((6051.8+600)**3 / 3.24859e+5) # duration of the orbit 
 dt = orbit/1000                     # delta time in seconds, almost 6 seconds
 Dt = orbit/30                       # big delta for initial transient, almost 200 sec
 kAl = 130                           # thermal conductivity of aluminum in W/(mK)
-AdL = .0003/.3                     # A/L of each contact in m**2/m
+AdL = .3*.002/.3                    # A/L of each contact in m**2/m
 C = kAl*AdL                         # conductance between each node in W/K
 mcE = 242.784                       # mass * heat capacity of each external node in J/K
 mcI = 10000                         # mass * heat capacity of the internal node in J/K
@@ -146,11 +146,11 @@ def NextTemp(sat,trlong,dt):
     # node 3
     Qcond = C*(-4*sat[3].T + sat[1].T + sat[2].T + sat[5].T + sat[6].T)
     Qrad = Rad(sat[3],trlong)
-    sat[3].Tnext = sat[3].T + (Qcond+Qrad)*dt/mcI
+    sat[3].Tnext = sat[3].T + (Qcond+Qrad)*dt/mcE
     # node 4
     Qcond = C*(-4*sat[4].T + sat[1].T + sat[2].T + sat[5].T + sat[6].T)
     Qrad = Rad(sat[4],trlong)
-    sat[4].Tnext = sat[4].T + (Qcond+Qrad)*dt/mcI
+    sat[4].Tnext = sat[4].T + (Qcond+Qrad)*dt/mcE
     # node 5
     Qcond = C*(-6*sat[5].T + 2*sat[0].T + sat[1].T + sat[2].T + sat[3].T + sat[4].T)
     Qrad = Rad(sat[5],trlong)
@@ -237,8 +237,8 @@ def Plot(t,T,lim1,lim2,xl):
 
 
 class Node:
-    T = kelvin + 30                 # temperature at time t in degrees kelvin
-    Tnext = kelvin + 30             # temperature at time t+dt
+    T = kelvin - 20                 # temperature at time t in degrees kelvin
+    Tnext = kelvin - 20             # temperature at time t+dt
     mc = 0                          # mass * heat capacity in J/K
     Qg = 0                          # generated heat in W
     planetF = 0                     # view factor
@@ -256,10 +256,11 @@ print ('\n\n-------------------------------Thermal Control Simulator------------
 print ('Developed by:\n\tBURRONI, Tomas\n\tESCOBAR, Matias\n\n')
 
 
-sat = [Node(),Node(),Node(),Node(),Node(),Node(),Node()]    # nodes int,+x,+y,+z,-x,-y,-z
+sat = [Node(),Node(),Node(),Node(),Node(),Node(),Node()]    # nodes int,+x,-x,+z,-z,+y,-y
 
 sat[0].mc = mcI
 sat[0].Qg = 50.0887*CellArea            # defined by the program, see calculations below
+sat[0].T = sat[0].Tnext = kelvin + 20
 
 for i in range(1,7):
     sat[i].mc = mcE
@@ -469,7 +470,7 @@ sat[6].angle = -1
 
 
 
-t1 = np.arange(0,15*orbit+0.1,dt/5)
+t1 = np.arange(0,5*orbit+0.1,dt/10)
 for i in range(0,len(t1)):
     trl = t2trlong(t1[i])
     NextTemp(sat,trl,dt/10)
@@ -490,5 +491,11 @@ data -= kelvin
 
 print ('T0 = ', data[0,:])
 print ('Tf = ', data[-1,:])
+print ('dT = ', data[0,:] - data[-1,:])
 
-Plot(trl,data,-20,130,1)
+print ('\nTMAX = ', np.max(data, axis=0))
+print ('\nTmin = ', np.min(data, axis=0))
+
+Plot(trl,data,-40,130,1)
+
+#Plot(trl,np.append(data[int(len(data)/2):,:],data[:int(len(data)/2),:],axis=0),-40,130,1)
